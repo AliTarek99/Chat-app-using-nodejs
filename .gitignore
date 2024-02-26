@@ -1,0 +1,4 @@
+data/voiceRecords/*
+data/profilePics/*
+data/images/*
+node_modules
