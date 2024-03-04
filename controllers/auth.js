@@ -32,10 +32,11 @@ exports.register = async (req, res, next) => {
         }
         else {
             let body = req.body;
+            let hashedPassword = await bcrypt.hash(body.password, 12);
             let user = new User({
                 phone_Num: body.phone_Num, 
                 email: body.email,
-                password: body.password,
+                password: hashedPassword,
                 profile_Pic: body.profile_Pic,
                 username: body.username,
                 status: body.status
