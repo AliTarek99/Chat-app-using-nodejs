@@ -41,3 +41,5 @@ class Message {
         return records
     }
 }
+
+module.exports = Message;

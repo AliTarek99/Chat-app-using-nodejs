@@ -39,7 +39,7 @@ class Group{
             return false;
         }
         if(group)
-            group = new Group(group);
+            group = new Group(group[0]);
         return group;
     }
 
@@ -52,3 +52,5 @@ class Group{
         return true;
     }
 }
+
+module.exports = Group;

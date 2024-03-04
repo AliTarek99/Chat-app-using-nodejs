@@ -38,3 +38,5 @@ class GroupMember {
         return members;
     }
 }
+
+module.exports = GroupMember;
