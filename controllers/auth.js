@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/users');
 const bcrypt = require('bcrypt')
+const {validationResult} = require('express-validator');
 
 const JWT_SECRET_KEY = '1jf42983qweji1jaksgasnk-vasd'
 
@@ -21,6 +22,10 @@ exports.login = async (req, res, next) => {
 }
 
 exports.register = async (req, res, next) => {
+    let errors = validationResult(req);
+    if(!errors.isEmpty()) {
+        return res.status(400).json({status: false, msg: 'input errors', errors: errors.array()});
+    }
     try {
         let usedNumber = await User.find(req.body.phone_Num);
         let usedEmail = await User.find(req.body.email);
