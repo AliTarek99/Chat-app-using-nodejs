@@ -7,7 +7,7 @@ const JWT_SECRET_KEY = '1jf42983qweji1jaksgasnk-vasd'
 
 exports.login = async (req, res, next) => {
     try {
-        let user = await User.find(req.body.phone_Num, req.body.email, undefined);
+        let user = await User.find({phone_Num: req.body.phone_Num, email: req.body.email});
         if(user && await bcrypt.compare(req.body.password, user.password)) {
             let token = jwt.sign({userId: user.id, email: user.email}, JWT_SECRET_KEY);
             delete user.password;
@@ -27,8 +27,8 @@ exports.register = async (req, res, next) => {
         return res.status(400).json({status: false, msg: 'input errors', errors: errors.array()});
     }
     try {
-        let usedNumber = await User.find(req.body.phone_Num);
-        let usedEmail = await User.find(req.body.email);
+        let usedNumber = await User.find({phone_Num: req.body.phone_Num});
+        let usedEmail = await User.find({email: req.body.email});
         if(usedEmail) {
             return res.status(409).json({status: false, msg: 'Email already used.'});
         }

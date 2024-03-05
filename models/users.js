@@ -1,13 +1,15 @@
 const db = require("../util/database");
 
 class User {
-    User({phone_Num, email, password, profile_Pic, username, status, id}) {
+    User({phone_Num, email, password, profile_Pic, username, status, id, token_Expiry, password_Reset_Token}) {
         this.phone_Num = phone_Num;
         this.email = email;
         this.password = password;
         this.profile_Pic = profile_Pic;
         this.username = username;
         this.status = status;
+        this.password_Reset_Token = password_Reset_Token;
+        this.token_Expiry = token_Expiry;
         this.id = id;
     }
 
@@ -29,10 +31,19 @@ class User {
         }
     }
     
-    static async find(phone_Num, email, id) {
-        let user;
+    static async find({phone_Num, email, id, token}) {
+        let user, query;
+        if(phone_Num)
+            query = 'phone_Num=?';
+        else if(email)
+            query = 'email=?';
+        else if(id) 
+            query = 'id=?';
+        else
+            query = 'token=?';
+
         try {
-            [user] = await db.execute('SELECT * FROM Users WHERE phone_Num=? OR email=? OR id=?', [phone_Num, email, id]);
+            [user] = await db.execute('SELECT * FROM Users WHERE ' + query, [phone_Num || email || id || token]);
         }catch(err) {
             return false;
         }
