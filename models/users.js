@@ -25,7 +25,7 @@ class User {
                     this.status
                 ]
             );
-            return await find(undefined, this.email);
+            return User.find({email: this.email});
         }catch(err) {
             return false;
         }
@@ -39,9 +39,10 @@ class User {
             query = 'email=?';
         else if(id) 
             query = 'id=?';
-        else
+        else if(token)
             query = 'token=?';
-
+        else return false;
+        
         try {
             [user] = await db.execute('SELECT * FROM Users WHERE ' + query, [phone_Num || email || id || token]);
         }catch(err) {
