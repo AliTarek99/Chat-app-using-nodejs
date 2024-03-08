@@ -79,7 +79,6 @@ exports.getMessages = async (req, res, next) => {
     } catch(err) {
         next(err);
     }
-    
 }
 
 exports.sendMessage = async (req, res, next) => {
@@ -87,11 +86,38 @@ exports.sendMessage = async (req, res, next) => {
 }
 
 exports.getMembers = async (req, res, next) => {
-    
+    if(!req.body.group_Id) {
+        return res.status(400).json({msg: 'Missing group ID.'});
+    }
+    try {
+        let member = await GroupMember.find(req.body.group_Id, req.user.id);
+        if(member) {
+            let members = await GroupMember.find(req.body.group_Id);
+            return res.status(200).json({members: members});
+        }
+        return res.status(401).json({msg: 'Unauthorized.'});
+    } catch(err) {
+        next(err);
+    }
 }
 
 exports.removeMember = async (req, res, next) => {
-    
+    if(!req.body.user_Id || !req.body.group_Id) {
+        return res.status(400).json({msg: 'Missing required info.'});
+    }
+    try{
+        let member = await GroupMember.find(req.body.group_Id, req.user.id);
+        if(member && member.admin) {
+            let result = await GroupMember.delete(req.body.group_Id, req.body.user_Id);
+            if(result) {
+                return res.status(200).json({msg: 'Removed successfully.'});
+            }
+            return res.status(200).json({msg: 'User not found.'});
+        }
+        return res.status(401).json({msg: 'Unauthorized.'});
+    } catch(err) {
+        next(err);
+    }
 }
 
 exports.addMember = async (req, res, next) => {

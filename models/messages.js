@@ -31,7 +31,7 @@ class Message {
         skip = skip || 0;
         let messages;
         try{
-            [messages] = await db.execute('SELECT * FROM Messages WHERE chat_id=? LIMIT ? OFFSET ?', [chat_Id, limit, skip]);
+            [messages] = await db.execute('SELECT * FROM Messages WHERE chat_id=? LIMIT ? OFFSET ? ORDER BY createdAt DESC', [chat_Id, limit, skip]);
         }catch(err) {
             return false;
         }
