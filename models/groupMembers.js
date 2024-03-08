@@ -25,10 +25,16 @@ class GroupMember {
         return true;
     }
 
-    static async find(group_Id) {
+    static async find(group_Id, user_Id) {
+        let query = '', params = [];
+        params.push(group_Id);
+        if(user_Id) {
+            query += 'OR user_Id=?';
+            params.push(user_Id);
+        }
         let members;
         try {
-            [members] = await db.execute('SELECT * FROM Group_Memebers AS GM LEFT JOIN Users AS U ON GM.user_Id = U.id WHERE group_Id=?', [group_Id]);
+            [members] = await db.execute('SELECT * FROM Group_Memebers AS GM LEFT JOIN Users AS U ON GM.user_Id = U.id WHERE group_Id=? ' + query, params);
         } catch(err) {
             return false;
         }

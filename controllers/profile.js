@@ -29,16 +29,16 @@ exports.getPasswordReset = async (req, res, next) => {
                 name: user.username
             }
             sendEmail(message, recipient);
-            res.status(200).json({status: true, msg: 'If email entered exists you will recieve an email.'});
+            res.status(200).json({msg: 'If email entered exists you will recieve an email.'});
         });
     }
-    res.status(200).json({status: true, msg: 'If email entered exists you will recieve an email.'});
+    res.status(200).json({msg: 'If email entered exists you will recieve an email.'});
 }
 
 exports.patchPassword = async (req, res, next) => {
     let errors = validationResult(req);
     if(!errors.isEmpty()) {
-        return res.status(400).json({status: false, msg: 'input errors', errors: errors.array()});
+        return res.status(400).json({msg: 'input errors', errors: errors.array()});
     }
     let user = await User.find({token: req.params.token});
     if(!user || user.token_Expiry >= new Date()) {
@@ -57,7 +57,7 @@ exports.patchPassword = async (req, res, next) => {
         } catch(err) {
             next(err);
         }
-        res.status(200).json({status: true, msg: 'Password changed successfully!'});
+        res.status(200).json({msg: 'Password changed successfully!'});
         let message = {
             Subject: 'Password Changed.',
             text: 'Your password has been changed, If it was not you click here to reset it. This link is valid for 2 hours only.',
@@ -74,7 +74,7 @@ exports.patchPassword = async (req, res, next) => {
 exports.modifyAccountInfo = async (req, res, next) => {
     let errors = validationResult(req);
     if(!errors.isEmpty()) {
-        return res.status(400).json({status: false, msg: 'input errors', errors: errors.array()});
+        return res.status(400).json({msg: 'input errors', errors: errors.array()});
     }
     if(req.user) {
         let user = req.user;
@@ -90,8 +90,8 @@ exports.modifyAccountInfo = async (req, res, next) => {
             next(err);
         }
         if(result)
-            res.status(200).json({status: true, msg: 'Modified Successfully!'});
+            res.status(200).json({msg: 'Modified Successfully!'});
         else 
-            res.status(500).json({status: false, msg: 'Server Error!'});
+            res.status(500).json({msg: 'Server Error!'});
     }
 }

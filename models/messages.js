@@ -38,7 +38,7 @@ class Message {
         if(messages) {
             messages = messages.map(value => new Message(value));
         }
-        return records
+        return messages
     }
 }
 

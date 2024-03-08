@@ -11,10 +11,10 @@ exports.login = async (req, res, next) => {
         if(user && await bcrypt.compare(req.body.password, user.password)) {
             let token = jwt.sign({userId: user.id, email: user.email}, JWT_SECRET_KEY);
             delete user.password;
-            return res.status(200).json({status: true, user, token: token});
+            return res.status(200).json({user, token: token});
         } 
         else {
-            return res.status(401).json({msg: "Incorrect email/number or password.", status: false});
+            return res.status(401).json({msg: "Incorrect email/number or password."});
         }
     } catch(err) {
         next(err);
@@ -24,16 +24,16 @@ exports.login = async (req, res, next) => {
 exports.register = async (req, res, next) => {
     let errors = validationResult(req);
     if(!errors.isEmpty()) {
-        return res.status(400).json({status: false, msg: 'input errors', errors: errors.array()});
+        return res.status(400).json({ msg: 'input errors', errors: errors.array()});
     }
     try {
         let usedNumber = await User.find({phone_Num: req.body.phone_Num});
         let usedEmail = await User.find({email: req.body.email});
         if(usedEmail) {
-            return res.status(409).json({status: false, msg: 'Email already used.'});
+            return res.status(409).json({msg: 'Email already used.'});
         }
         else if(usedNumber) {
-            return res.status(409).json({status: false, msg: 'Phone number already used.'});
+            return res.status(409).json({msg: 'Phone number already used.'});
         }
         else {
             let body = req.body;
@@ -49,10 +49,10 @@ exports.register = async (req, res, next) => {
             user = await user.save();
             if(user) {
                 let token = jwt.sign({userId: user.id, email: user.email}, JWT_SECRET_KEY);
-                return res.status(200).json({status: true, user, token: token});
+                return res.status(200).json({user, token: token});
             }
             else {
-                return res.status(500).json({status: false, msg: 'Server Error!'});
+                return res.status(500).json({msg: 'Server Error!'});
             }
         }
     } catch(err) {

@@ -21,13 +21,14 @@ class GroupChats extends Chat {
         } catch(err) {
             return false;
         }
-        return await PrivateChat.find({user1_Id: this.user1_Id, user2_Id: this.user2_Id});
+        return await GroupChats.find({user1_Id: this.user1_Id, user2_Id: this.user2_Id});
     }
 
     static async findAllChats({user_Id, id}) {
-        let query, params = [];
+        let query, join = '', params = [];
         let chats;
         if(user_Id) {
+            join = 'LEFT JOIN Group_Members AS gm ON (gm.group_Id=gc.id)';
             query = 'gm.user_Id=?';
             params.push(user_Id);
         }
@@ -37,17 +38,16 @@ class GroupChats extends Chat {
         }
         try{
             [chats] = await db.execute(`
-                SELECT gc.id, gc.group_Id, gc.group_Pic, gc.description, gc.join_Link, gc.name 
+                SELECT gc.id, gc.group_Pic, gc.description, gc.join_Link, gc.link_Expiry, gc.name 
                 FROM Group_Chats AS gc 
-                LEFT JOIN Group_Members AS gm 
-                ON (gm.user_Id=gc.id) 
-                WHERE ` + query, 
+                ${join}
+                WHERE ${query}`, 
                 params
             );
         } catch(err) {
             return false;
         }
-        return chats.map(value => new PrivateChat({user1_Id: value.user1_Id, user2_Id: value.user2_Id, id: value.id}));
+        return chats.map(value => new GroupChats({id: value.id, join_Link: value.join_Link, link_Expiry: value.link_Expiry, group_Pic: value.group_Pic, description: value.description, name: value.name}));
     }
 
     static async update({id, group_Pic, description, join_Link, link_Expiry, name}) {

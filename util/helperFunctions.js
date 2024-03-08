@@ -14,7 +14,8 @@ exports.isAuth = async (req, res, next) => {
             if(!user)
                 throw new Error('Not Authorized!');
             req.user = user;
-            return next();
+            if(next)
+                return next();
         } catch(err) { 
             next(err);
         }
