@@ -1,16 +1,18 @@
 const db = require("../util/database");
 
 class Message {
-    constructor({chat_Id, message, voice, image}) {
+    constructor({chat_Id, message, voice, image, id}) {
         this.chat_Id = chat_Id;
         this.message = message;
         this.voice = voice;
         this.image = image;
+        this.id = id;
     }
 
     async save() {
         try{
-            await db.execute('INSERT INTO Messages chat_id=?, message=?, image=?, voice=?, createdAt=?', [this.chat_Id, this.message, this.image, this.voice, new Date()]);
+            let insertId = await db.execute('INSERT INTO Messages chat_id=?, message=?, image=?, voice=?, createdAt=?', [this.chat_Id, this.message, this.image, this.voice, new Date()]);
+            this.id = insertId[0].insertId;
         }catch(err) {
             return false;
         }

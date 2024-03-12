@@ -17,7 +17,8 @@
     "mailjet": "^0.0.1",
     "multer": "^1.4.5-lts.1",
     "mysql2": "^3.9.1",
-    "node-mailjet": "^6.0.5"
+    "node-mailjet": "^6.0.5",
+    "socket.io": "^4.7.4"
   },
   "devDependencies": {
     "nodemon": "^3.1.0"

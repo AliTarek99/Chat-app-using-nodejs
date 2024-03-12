@@ -18,4 +18,4 @@ app.use((err, req, res, next) => {
     res.status(500).json({msg: 'Something went wrong we are working on it.'});
 });
 
-app.listen(3000);
+const server = app.listen(3000);

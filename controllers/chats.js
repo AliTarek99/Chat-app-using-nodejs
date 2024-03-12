@@ -4,6 +4,7 @@ const Message = require('../models/messages');
 const GroupMember = require('../models/groupMembers');
 const { ChatTypes } = require('../models/chats');
 const User = require('../models/users');
+const { validationResult } = require('express-validator');
 
 const DEFAULT_GROUP_PIC = '';
 
@@ -83,7 +84,20 @@ exports.getMessages = async (req, res, next) => {
 }
 
 exports.sendMessage = async (req, res, next) => {
-    
+    let errors = validationResult(req);
+    if(!errors.isEmpty()) {
+        return res.status(400).json({msg: errors.array()[0].msg});
+    }
+    try {
+        let recipient = await User.find({phone_Num: req.body.phone_Num, id: req.body.user_Id});
+        if(!recipient) {
+            return res.status(200).json({msg: 'User not found.'});
+        }
+        let message = new Message({chat_Id: req.body.chat_Id, image: req.files.image, voice: req.files.voice, message: req.body.message});
+        await message.save();
+    } catch(err) {
+        next(err);
+    }
 }
 
 exports.getMembers = async (req, res, next) => {
