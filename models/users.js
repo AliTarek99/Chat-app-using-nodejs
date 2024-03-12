@@ -1,7 +1,7 @@
 const db = require("../util/database");
 
 class User {
-    User({phone_Num, email, password, profile_Pic, username, status, id, token_Expiry, password_Reset_Token}) {
+    constructor({phone_Num, email, password, profile_Pic, username, status, id, token_Expiry, password_Reset_Token}) {
         this.phone_Num = phone_Num;
         this.email = email;
         this.password = password;
@@ -15,14 +15,14 @@ class User {
 
     async save() {
         try {
-            await db.execute('INSERT INTO Users phone_Num=?, email=?, password=?, profile_Pic=?, username=?, status=?', 
+            await db.execute('INSERT INTO Users (phone_Num, email, password, profile_Pic, username, status) values(?, ?, ?, ?, ?, ?)', 
                 [
                     this.phone_Num, 
                     this.email, 
                     this.password, 
-                    this.profile_Pic, 
+                    this.profile_Pic || null, 
                     this.username, 
-                    this.status
+                    this.status || null
                 ]
             );
             return User.find({email: this.email});
@@ -48,8 +48,10 @@ class User {
         }catch(err) {
             return false;
         }
-        user = new User(user[0]);
-        return user;
+        if(user.length) {
+            user = new User(user[0]);
+            return user;
+        } else return false;
     }
     
     static async delete(userId) {

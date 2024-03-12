@@ -7,10 +7,10 @@ const JWT_SECRET_KEY = '1jf42983qweji1jaksgasnk-vasd'
 
 exports.isAuth = async (req, res, next) => {
     if(req.get('Authorization')) {
-        const token = req.get('Authorization').split(' ')[1];
+        const token = req.get('Authorization');
         try {
             let decodedToken = jwt.decode(token, JWT_SECRET_KEY);
-            let user = await User.find({id: decodedToken.userId});
+            let user = await User.find({id: decodedToken.user_Id});
             if(!user)
                 throw new Error('Not Authorized!');
             req.user = user;

@@ -17,10 +17,14 @@ router.put('/messages/:chat_Id', isAuth, check('message').custom((value, req) =>
     return true;
 }).withMessage('Failed to send message'), chatsController.sendMessage);
 
-router.get('/groups/members', isAuth, chatsController.getMembers);
+router.get('/groups/members/:group_Id', isAuth, chatsController.getMembers);
 
 router.delete('/groups/members', isAuth, chatsController.removeMember);
 
-router.put('/groups/memebers', isAuth, chatsController.addMember);
+router.put('/groups/members', isAuth, chatsController.addMember);
 
-router.patch('groups/join_Link', isAuth, chatsController.createJoinLink);
+router.patch('/groups/join_Link', isAuth, chatsController.createJoinLink);
+
+router.patch('/groups/members', isAuth, chatsController.makeAdmin);
+
+module.exports = router;

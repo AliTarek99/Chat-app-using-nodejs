@@ -3,25 +3,24 @@ const ChatTypes = require('../models/chats').ChatTypes;
 const db = require('../util/database');
 
 class GroupChats extends Chat {
-    PrivateChat({id, group_Pic, description, join_Link, link_Expiry, name}) {
+    constructor({id, group_Pic, description, join_Link, link_Expiry, name}) {
         super({id: id, type: ChatTypes.group});
-        this.group_Id = group_Id;
         this.group_Pic = group_Pic;
         this.description = description;
-        this.join_Link = join_Link;
-        this.link_Expiry = link_Expiry;
+        this.join_Link = join_Link || null;
+        this.link_Expiry = link_Expiry || null;
         this.name = name;
     }
 
     async save() {
-        if(!this.user1_Id || !this.user2_Id) return false;
+        if(!this.name) return false;
         try {
             this.id = await super.save();
-            await db.execute('INSERT INTO Group_Chats (id, group_Pic, description, join_Link, link_Expiry, name) values(?, ?, ?, ?, ?, ?)', [this.id, this.user1_Id, this.user2_Id, this.group_Pic, this.description, this.join_Link, this.link_Expiry, this.name]);
+            await db.execute('INSERT INTO Group_Chats (id, group_Pic, description, join_Link, link_Expiry, name) values(?, ?, ?, ?, ?, ?)', [this.id, this.group_Pic, this.description, this.join_Link, this.link_Expiry, this.name]);
         } catch(err) {
             return false;
         }
-        return await GroupChats.find({user1_Id: this.user1_Id, user2_Id: this.user2_Id});
+        return await GroupChats.findAllChats({id: this.id});
     }
 
     static async findAllChats({user_Id, id}) {

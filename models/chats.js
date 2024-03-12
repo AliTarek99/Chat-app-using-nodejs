@@ -6,15 +6,15 @@ const ChatTypes = {
 };
 
 class Chat {
-    Chat({id, type}) {
+    constructor({id, type}) {
         this.id = id;
         this.type = type
     }
 
     async save() {
         try {
-           let { insertId } = await db.execute('INSERT INTO Chats (type) values(?)', [this.type]);
-           this.id = insertId;
+           let insertId = await db.execute('INSERT INTO Chats (type) values(?)', [this.type]);
+           this.id = insertId[0].insertId;
         } catch(err) {
             return false;
         }

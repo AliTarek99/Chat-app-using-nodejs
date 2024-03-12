@@ -9,7 +9,7 @@ exports.login = async (req, res, next) => {
     try {
         let user = await User.find({phone_Num: req.body.phone_Num, email: req.body.email});
         if(user && await bcrypt.compare(req.body.password, user.password)) {
-            let token = jwt.sign({userId: user.id, email: user.email}, JWT_SECRET_KEY);
+            let token = jwt.sign({user_Id: user.id, email: user.email}, JWT_SECRET_KEY);
             delete user.password;
             return res.status(200).json({user, token: token});
         } 
@@ -48,7 +48,8 @@ exports.register = async (req, res, next) => {
             });
             user = await user.save();
             if(user) {
-                let token = jwt.sign({userId: user.id, email: user.email}, JWT_SECRET_KEY);
+                let token = jwt.sign({user_Id: user.id, email: user.email}, JWT_SECRET_KEY);
+                delete user.password;
                 return res.status(200).json({user, token: token});
             }
             else {

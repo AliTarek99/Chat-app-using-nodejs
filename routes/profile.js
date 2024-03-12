@@ -19,4 +19,6 @@ router.patch('/account-info', [
     ], 
     isAuth,
     profileController.modifyAccountInfo
-); // must be authenticated
+);
+
+module.exports = router;

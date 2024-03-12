@@ -9,7 +9,7 @@ const DEFAULT_GROUP_PIC = '';
 
 exports.getChats = async(req, res, next) => {
     try {
-        let privateChats = await Private.findAllChats(req.user.id);
+        let privateChats = await Private.findAllChats({sender: req.user.id});
         let groupChats = await Group.findAllChats({user_Id: req.user.id});
         res.status(200).json({privateChats: privateChats, groupChats: groupChats});
     } catch(err) {
@@ -18,9 +18,6 @@ exports.getChats = async(req, res, next) => {
 }
 
 exports.createChat = async (req, res, next) => {
-    if(!req.body.phone_Num) {
-        return res.status(400).json({msg: 'Missing phone_Num!'});
-    }
     if(req.body.type == ChatTypes.group) {
         if(!req.body.name) {
             return res.status(400).json({msg: 'Group name is required!'});
@@ -31,12 +28,12 @@ exports.createChat = async (req, res, next) => {
             if(!chat) {
                 throw new Error('Error while creating the group.');
             }
-            let groupMember = new GroupMember({group_Id: chat.id, user_Id: req.user.id, admin: true});
+            let groupMember = new GroupMember({group_Id: chat[0].id, user_Id: req.user.id, admin: true});
             await groupMember.save();
             if(!groupMember) {
                 throw new Error('Error adding member to the group!');
             }
-            res.status(201).json({msg: 'Group created successfully.', group: chat});
+            res.status(201).json({msg: 'Group created successfully.', group: chat[0]});
         } catch(err) {
             next(err);
         }
@@ -46,16 +43,20 @@ exports.createChat = async (req, res, next) => {
             return res.status(400).json({msg: 'Missing recipient data.'});
         }
         try {
-            let user = await User.find({phone_Num: req.body.phone_Num, id: req.body.recipient_Id, email: req.body.email});
-            if(!user) {
+            let recipient = await User.find({phone_Num: req.body.phone_Num, id: req.body.recipient_Id, email: req.body.email});
+            if(!recipient) {
                 return res.status(400).json({msg: 'Invalid recipient data.'});
             }
-            let chat = new Private({user1_Id: req.user.id, user2_Id: req.body.recipient_Id});
+            let found = await Private.findAllChats({sender: req.user.id, recipient: recipient.id});
+            if(found.length) {
+                return res.status(200).json({msg: 'Chat already exists', chat: found[0]});
+            }
+            let chat = new Private({user1_Id: req.user.id, user2_Id: recipient.id});
             chat = await chat.save();
             if(!chat) {
                 throw new Error('Error while creating chat.');
             }
-            return res.status(201).json({msg: 'Chat created successfully'});
+            return res.status(201).json({msg: 'Chat created successfully', chat: chat[0]});
         } catch(err) {
             next(err);
         }
@@ -82,17 +83,18 @@ exports.getMessages = async (req, res, next) => {
 }
 
 exports.sendMessage = async (req, res, next) => {
-
+    
 }
 
 exports.getMembers = async (req, res, next) => {
-    if(!req.body.group_Id) {
+    if(!req.params.group_Id) {
         return res.status(400).json({msg: 'Missing group ID.'});
     }
     try {
-        let member = await GroupMember.find(req.body.group_Id, req.user.id);
+        let member = await GroupMember.find(req.params.group_Id, req.user.id);
+        member = member[0];
         if(member) {
-            let members = await GroupMember.find(req.body.group_Id);
+            let members = await GroupMember.find(req.params.group_Id);
             return res.status(200).json({members: members});
         }
         return res.status(401).json({msg: 'Unauthorized.'});
@@ -102,11 +104,18 @@ exports.getMembers = async (req, res, next) => {
 }
 
 exports.removeMember = async (req, res, next) => {
-    if(!req.body.user_Id || !req.body.group_Id) {
+    if(!req.body.group_Id) {
         return res.status(400).json({msg: 'Missing required info.'});
+    }
+    if(!req.body.user_Id) {
+        req.body.user_Id = await User.find({phone_Num: req.body.phone_Num});
+        if(req.body.user_Id)
+            req.body.user_Id = req.body.user_Id.id;
+        else return res.status(400).json({msg: 'User not found!'});
     }
     try{
         let member = await GroupMember.find(req.body.group_Id, req.user.id);
+        member = member[0];
         if(member && member.admin) {
             let result = await GroupMember.delete(req.body.group_Id, req.body.user_Id);
             if(result) {
@@ -125,21 +134,56 @@ exports.addMember = async (req, res, next) => {
         // join using invite link
     }
     else {
-        let member = await GroupMember.find(req.body.groupId, req.user.id);
+        let member = await GroupMember.find(req.body.group_Id, req.user.id);
+        member = member[0];
         if(!member || !member.admin) {
-            return res.status(401).json({msg: 'Not authenticated.'});
+            return res.status(401).json({msg: 'Not authorized.'});
         }
-        let newMember = await GroupMember.find(req.body.groupId, req.body.user_Id);
+        if(!req.body.user_Id) {
+            req.body.user_Id = await User.find({phone_Num: req.body.phone_Num});
+            if(req.body.user_Id)
+                req.body.user_Id = req.body.user_Id.id;
+            else return res.status(400).json({msg: 'User not found!'});
+        }
+        let newMember = await GroupMember.find(req.body.group_Id, req.body.user_Id);
+        if(newMember[0]) {
+            return res.status(200).json({msg: 'User already added.'});
+        }
+        newMember = new GroupMember({group_Id: req.body.group_Id, user_Id: req.body.user_Id, admin: false});
+        await newMember.save()
         if(newMember) {
-            return res.status(400).json({msg: 'User already added.'});
-        }
-        let result = new GroupMember({group_Id: req.body.group_Id, user_Id: req.body.user_Id, admin: false});
-        if(result) {
             res.status(201).json({msg:'User added successfully.'});
         }
         else {
             res.status(500).json({msg:'Something went wrong!'});
         }
+    }
+}
+
+exports.makeAdmin = async (req, res, next) => {
+    if(!req.body.group_Id || !req.body.user_Id || !req.body.admin) {
+        return res.status(400).json({msg: 'Missing required info.'});
+    }
+    try {
+        let member = await GroupMember.find(req.body.group_Id, req.user.id);
+        member = member[0];
+        if(!member || !member.admin) {
+            return res.status(401).json({msg: 'Not authorized.'});
+        }
+
+    
+        let result = await GroupMember.updateAdmin(req.body.group_Id, req.body.user_Id, req.body.admin)
+        if(result) {
+            return res.status(200).json({msg: 'Member updated Successfully.'});
+        }
+        else if(result === 0) {
+            return res.status(400).json({msg: 'Member not found.'});
+        }
+        else {
+            return res.status(500).json({msg: 'Something went wrong!'});
+        }
+    } catch(err) {
+        next(err);
     }
 }
 

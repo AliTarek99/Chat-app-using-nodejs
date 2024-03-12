@@ -1,7 +1,7 @@
 const db = require("../util/database");
 
 class Message {
-    Message({chat_Id, message, voice, image}) {
+    constructor({chat_Id, message, voice, image}) {
         this.chat_Id = chat_Id;
         this.message = message;
         this.voice = voice;
