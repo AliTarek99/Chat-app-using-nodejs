@@ -20,7 +20,17 @@ exports.isAuth = async (req, res, next) => {
             next(err);
         }
     }
-}
+};
+
+exports.getUser = async token => {
+    try {
+        let decodedToken = jwt.decode(token, JWT_SECRET_KEY);
+        let user = await User.find({id: decodedToken.user_Id});
+        return user;
+    } catch(err) { 
+        next(err);
+    }
+};
 
 
 exports.sendEmail = async (message, to) => {
@@ -43,4 +53,11 @@ exports.sendEmail = async (message, to) => {
             }
         ]
     });
+};
+
+exports.imageFilter = (req, file, cb) => {
+    if(file.mimetype == 'image/jpg' || file.mimetype == 'image/jpeg' || file.mimetype == 'image/png')
+        cb(null, true);
+    else
+        cb(null, false);
 }

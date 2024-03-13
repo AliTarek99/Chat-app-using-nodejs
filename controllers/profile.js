@@ -82,7 +82,7 @@ exports.modifyAccountInfo = async (req, res, next) => {
         user.phone_Num = req.body.phone_Num || user.phone_Num;
         user.email = req.body.email  || user.email;
         user.status = req.body.status  || user.status;
-        //////////// Profile pic update
+        user.profile_Pic = (req.file? req.file.path: undefined);
         let result;
         try {
             result = await user.save();

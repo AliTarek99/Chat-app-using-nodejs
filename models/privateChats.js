@@ -46,7 +46,19 @@ class PrivateChat extends Chat {
         } catch(err) {
             return false;
         }
-        return chats.map(value => new PrivateChat({user1_Id: value.user1_Id, user2_Id: value.user2_Id, id: value.id}));
+        return chats.map(value => {
+            if(value.user1_Id == sender)
+                delete value.user1_Id;
+            else 
+                delete value.user2_Id;
+            return {
+                user_Id: value.user1_Id || value.user2_Id, 
+                id: value.id, 
+                phone_Num: value.phone_Num,
+                username: value.username,
+                profile_Pic: value.profile_Pic,
+            };
+        });
     }
 }
 
