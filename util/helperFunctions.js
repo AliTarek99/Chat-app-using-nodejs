@@ -70,7 +70,6 @@ exports.staticFileAuth = async (req, res, next) => {
             found = await GroupMember.find(chat_Id, req.user.id);
         }
         if(found) {
-            res.setHeader('Content-Type', 'image/png');
             next();
         }
         res.status(401).json({msg: 'Unauthorized!'});
