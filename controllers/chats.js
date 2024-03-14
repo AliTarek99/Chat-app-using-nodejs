@@ -93,7 +93,7 @@ exports.sendMessage = async (req, res, next) => {
         if(!recipient) {
             return res.status(200).json({msg: 'User not found.'});
         }
-        let message = new Message({chat_Id: req.body.chat_Id, image: (req.file? req.file.path: undefined), voice: (req.file? req.file.path: undefined), message: req.body.message});
+        let message = new Message({sender_Id: req.user.id ,chat_Id: req.body.chat_Id, image: (req.file? req.file.path: undefined), voice: (req.file? req.file.path: undefined), message: req.body.message});
         await message.save();
         return res.status(201).json({msg: 'Message created successfully.'});
     } catch(err) {

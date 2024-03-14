@@ -21,25 +21,26 @@ class PrivateChat extends Chat {
     }
 
     static async findAllChats({sender, id, recipient}) {
-        let query, params = [];
+        let query = '', params = [];
         params.push(sender);
         if(id) {
             query = 'priv.id=?';
             params.push(id);
         }
-        else if(recipient) {
+        else if(sender && recipient) {
             query = '(priv.user1_Id=? AND priv.user2_Id=?) OR (priv.user1_Id=? AND priv.user2_Id=?)';
             params.push(sender);
             params.push(recipient);
             params.push(recipient);
             params.push(sender);
         }
-        else if(sender) {
-            query = 'priv.user1_Id=? OR priv.user2_Id=?';
+        if(sender) {
+            if(query.length) query += ' AND ';
+            query += '(priv.user1_Id=? OR priv.user2_Id=?)';
             params.push(sender);
             params.push(sender);
         }
-        else return false;
+        if(!params.length) return false;
         let chats;
         try{
             [chats] = await db.execute('SELECT * FROM Private_Chats AS priv LEFT JOIN Users ON ((priv.user1_Id=Users.id OR priv.user2_Id=Users.id) AND Users.id!=?) WHERE ' + query, params);

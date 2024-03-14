@@ -23,7 +23,7 @@ const imagesStorage = multer.diskStorage({
         }
         if(req.user) {
             if(req.url.split('/')[1] == 'messages' && req.chat_Id)
-                cb(null, `${req.chat_Id}-${file.originalname}`);
+                cb(null, `${new Date()}-${req.chat_Id}-${file.originalname}`);
             else
                 cb(null, req.user.id + '.' + file.mimetype.split('/')[1]);
         }
@@ -76,20 +76,14 @@ const app = express();
 
 app.use(express.json());
 
-app.use('/data/profilePics', (req, res, next) => {
+app.use('/data/profilePics', helper.isAuth, (req, res, next) => {
     res.setHeader('Content-Type', 'image/png');
     next();
 }, express.static(path.join('data', 'profilePics')));
 
-app.use('/data/images', (req, res, next) => {
-    res.setHeader('Content-Type', 'image/png');
-    next();
-}, express.static(path.join('data', 'images')));
+app.use('/data/images', helper.isAuth, helper.staticFileAuth, express.static(path.join('data', 'images')));
 
-app.use('/data/voiceRecords', (req, res, next) => {
-    res.setHeader('Content-Type', 'audio/mp3');
-    next();
-}, express.static(path.join('data', 'voiceRecords')));
+app.use('/data/voiceRecords', helper.isAuth, helper.staticFileAuth, express.static(path.join('data', 'voiceRecords')));
 
 
 app.use((req, res, next) => {

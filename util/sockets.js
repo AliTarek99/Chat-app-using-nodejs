@@ -1,4 +1,6 @@
+const GroupMember = require('../models/groupMembers');
 const getUser = require('../util/helperFunctions').getUser;
+const ChatTypes = require('../models/chats').ChatTypes;
 let io;
 let userSocket = new Map();
 let socketToUser = new Map();
@@ -26,9 +28,20 @@ exports.onConnection = socket => {
         delete sender.password_Reset_Token;
         delete sender.token_Expiry;
         delete sender.password;
-        const recipientSocket = userSocket.get(data.user_Id);
-        if(recipientSocket) {
-            socket.to(recipientSocket).emit('msg-receive', {from: sender, msg: data.message, voice: data.voice, image: data.image});
+        if(data.type == ChatTypes.private) {
+            const recipientSocket = userSocket.get(data.user_Id);
+            if(recipientSocket) {
+                return socket.to(recipientSocket).emit('msg-receive', {from: sender, msg: data.message, voice: data.voice, image: data.image});
+            }
+        }
+        else if(data.type == ChatTypes.group){
+            let members = await GroupMember.find(data.group_Id);
+            members.forEach(value => {
+                const recipientSocket = userSocket.get(value.user_Id);
+                if(recipientSocket) {
+                    return socket.to(recipientSocket).emit('msg-receive', {from: sender, msg: data.message, voice: data.voice, image: data.image});
+                }
+            });
         }
     });
     socket.on('disconnect', () => {

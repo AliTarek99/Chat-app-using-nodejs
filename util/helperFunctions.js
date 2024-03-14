@@ -61,3 +61,18 @@ exports.imageFilter = (req, file, cb) => {
     else
         cb(null, false);
 }
+
+exports.staticFileAuth = async (req, res, next) => {
+    let chat_Id = req.originalUrl.split('/')[3].split('-')[1];
+    if(chat_Id) {
+        let found = await PrivateChat.findAllChats({id: chat_Id, sender: req.user.id});
+        if(!found) {
+            found = await GroupMember.find(chat_Id, req.user.id);
+        }
+        if(found) {
+            res.setHeader('Content-Type', 'image/png');
+            next();
+        }
+        res.status(401).json({msg: 'Unauthorized!'});
+    }
+}
