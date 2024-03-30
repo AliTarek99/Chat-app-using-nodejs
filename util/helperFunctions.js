@@ -64,6 +64,13 @@ exports.imageFilter = (req, file, cb) => {
         cb(null, false);
 }
 
+exports.messageFilter = (req, file, cb) => {
+    if(file.mimetype == 'image/jpg' || file.mimetype == 'image/jpeg' || file.mimetype == 'image/png' || file.mimetype == 'audio/mp3' || file.mimetype == 'audio/mpeg')
+        cb(null, true);
+    else
+        cb(null, false);
+}
+
 exports.staticFileAuth = async (req, res, next) => {
     let chat_Id = req.originalUrl.split('/')[3].split('-')[1];
     if(chat_Id) {

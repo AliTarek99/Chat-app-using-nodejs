@@ -11,13 +11,13 @@ const PrivateChat = require('./models/privateChats');
 const { ChatTypes } = require('./models/chats');
 const GroupChats = require('./models/groupChats');
 
-const imagesStorage = multer.diskStorage({
+const storage = multer.diskStorage({
     destination: function (req, file, cb) {
         try {
-            if(req.originalUrl.split('/')[2] == 'messages' && file.mimetype != 'audio/mp3') {
+            if(req.originalUrl.split('/')[2] == 'messages' && file.mimetype != 'audio/mp3' && file.mimetype != 'audio/mpeg') {
                 cb(null, path.join('data', 'images'));
             }
-            else if(req.originalUrl.split('/')[2] == 'messages' && file.mimetype == 'audio/mp3')
+            else if(req.originalUrl.split('/')[2] == 'messages' && (file.mimetype == 'audio/mp3' || file.mimetype == 'audio/mpeg'))
                 cb(null, path.join('data', 'voiceRecords'));
             else if(req.originalUrl.split('/')[2] == 'profile'){
                 cb(null, path.join('data', 'profilePics'));
@@ -54,53 +54,16 @@ const imagesStorage = multer.diskStorage({
         }
     },
 });
-const voiceStorage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        if(req.originalUrl.split('/')[2] == 'messages')
-            cb(null, path.join('data', 'voiceRecords'));
-    },
-    filename: async function (req, file, cb) {
-        try {
-            await helper.isAuth(req);
-        } catch(err) {
-            console.log(err);
-        }
-        if(req.user && req.body.chat_Id && req.originalUrl.split('/')[2] == 'messages') {
-            let found;
-            if(req.body.type === ChatTypes.group) {
-                found = await GroupChats.findAllChats({user_Id: req.user.id, id: req.body.chat_Id});
-            }
-            else if(req.body.type === ChatTypes.private) {
-                found = await PrivateChat.findAllChats({sender: req.user.id, id: req.body.chat_Id})
-            }
-            if(found)
-                cb(null, `${new Date().getTime()}-${req.chat_Id}-${file.originalname}`);
-        }
-        else
-            cb(new Error('Not authorized!'));
-    },
-});
 
 const uploadImages = multer({
-    storage: imagesStorage, 
-    fileFilter: helper.imageFilter
-}).single('image');
+    storage: storage, 
+    fileFilter: helper.messageFilter
+}).single('media');
 
 const uploadProfilePics = multer({
-    storage: imagesStorage, 
+    storage: storage, 
     fileFilter: helper.imageFilter
 }).single('profile_Pic');
-
-const uploadVoice = multer({
-    storage: voiceStorage, 
-    fileFilter: function(req, file, cb) {
-        if(file.mimetype == 'audio/mp3')
-            cb(null, true);
-        else
-            cb(null, false);
-    }
-}).single('voice');
-
 
 const app = express();
 app.use(express.json());

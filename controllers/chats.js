@@ -123,7 +123,7 @@ exports.sendMessage = async (req, res, next) => {
                 if(value.id == sender.id) auth = true;
             });
             if(!auth) return;
-            let message = new Message({sender_Id: req.user.id ,chat_Id: req.body.chat_Id, image: (req.file.mimetype != 'audio/mp3'? req.file.path: undefined), voice: (req.file.mimetype == 'audio/mp3'? req.file.path: undefined), message: req.body.message});
+            let message = new Message({sender_Id: req.user.id ,chat_Id: req.body.chat_Id, image: (req.file.mimetype != 'audio/mp3' && req.file.mimetype != 'audio/mpeg' ? req.file.path: undefined), voice: (req.file.mimetype == 'audio/mp3' || req.file.mimetype == 'audio/mpeg'? req.file.path: undefined), message: req.body.message});
             await message.save();
             members.forEach(value => {
                 if(value.id == sender.id) return;
