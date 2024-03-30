@@ -2,9 +2,10 @@ const Private = require('../models/privateChats');
 const Group = require('../models/groupChats');
 const Message = require('../models/messages');
 const GroupMember = require('../models/groupMembers');
-const { ChatTypes } = require('../models/chats');
+const { ChatTypes, Chat } = require('../models/chats');
 const User = require('../models/users');
 const { validationResult } = require('express-validator');
+const sockets = require('../util/sockets');
 
 const DEFAULT_GROUP_PIC = '';
 
@@ -24,7 +25,7 @@ exports.createChat = async (req, res, next) => {
             return res.status(400).json({msg: 'Group name is required!'});
         }
         try {
-            let chat = new Group({group_Pic: req.body.group_Pic || DEFAULT_GROUP_PIC, description: req.body.description || '', name: req.body.name});
+            let chat = new Group({group_Pic: req.body.group_Pic || null, description: req.body.description || '', name: req.body.name});
             chat = await chat.save();
             if(!chat) {
                 throw new Error('Error while creating the group.');
@@ -69,8 +70,13 @@ exports.createChat = async (req, res, next) => {
 
 exports.getMessages = async (req, res, next) => {
     try{
-        let authenticated = await GroupMember.find(req.params.chat_Id, req.user.id) || Private.findAllChats(req.user.id, req.params.chat_Id);
-        if(authenticated) {
+        let authenticated;
+        if(req.body.type == ChatTypes.group)
+            authenticated = await GroupMember.find(req.params.chat_Id, req.user.id);
+        else if(req.body.type == ChatTypes.private) 
+            authenticated = await Private.findAllChats(req.user.id, req.params.chat_Id);
+
+        if(authenticated.length) {
             let msgs = await Message.getChat(req.params.chat_Id, req.limit, req.skip);
             if(msgs) {
                 return res.status(200).json({messages: msgs});
@@ -89,12 +95,44 @@ exports.sendMessage = async (req, res, next) => {
         return res.status(400).json({msg: errors.array()[0].msg});
     }
     try {
-        let recipient = await User.find({phone_Num: req.body.phone_Num, id: req.body.user_Id});
-        if(!recipient) {
-            return res.status(200).json({msg: 'User not found.'});
+        let io = sockets.getIO();
+        const sender = req.user;
+        delete sender.password_Reset_Token;
+        delete sender.token_Expiry;
+        delete sender.password;
+        if(req.body.type == ChatTypes.private) {
+            let recipient = await User.find({phone_Num: req.body.phone_Num, id: req.body.user_Id});
+            if(!recipient) {
+                return res.status(200).json({msg: 'User not found.'});
+            }
+            const chat = await Private.findAllChats({sender: sender.id, id: req.body.chat_Id});
+            if(!chat.length) {
+                throw new Error('Chat must be created first');
+            }
+            const recipientSocket = io.userSocket.get(req.body.user_Id);
+            if(recipientSocket) {
+                let message = new Message({sender_Id: req.user.id ,chat_Id: chat.id, image: (req.file.mimetype != 'audio/mp3'? req.file.path: undefined), voice: (req.file.mimetype == 'audio/mp3'? req.file.path: undefined), message: req.body.message});
+                await message.save();
+                return io.to(recipientSocket).emit('msg-receive', message);
+            }
         }
-        let message = new Message({sender_Id: req.user.id ,chat_Id: req.body.chat_Id, image: (req.file? req.file.path: undefined), voice: (req.file? req.file.path: undefined), message: req.body.message});
-        await message.save();
+        else if(req.body.type == ChatTypes.group) {
+            let members = await GroupMember.find(req.body.chat_Id);
+            let auth = false;
+            members.forEach(function(value) {
+                if(value.id == sender.id) auth = true;
+            });
+            if(!auth) return;
+            let message = new Message({sender_Id: req.user.id ,chat_Id: req.body.chat_Id, image: (req.file.mimetype != 'audio/mp3'? req.file.path: undefined), voice: (req.file.mimetype == 'audio/mp3'? req.file.path: undefined), message: req.body.message});
+            await message.save();
+            members.forEach(value => {
+                if(value.id == sender.id) return;
+                const recipientSocket = io.userSocket.get(value.id);
+                if(recipientSocket) {
+                    return io.to(recipientSocket).emit('msg-receive', message);
+                }
+            });
+        }
         return res.status(201).json({msg: 'Message created successfully.'});
     } catch(err) {
         next(err);
@@ -119,7 +157,7 @@ exports.getMembers = async (req, res, next) => {
 }
 
 exports.removeMember = async (req, res, next) => {
-    if(!req.body.group_Id) {
+    if(!req.body.chat_Id) {
         return res.status(400).json({msg: 'Missing required info.'});
     }
     if(!req.body.user_Id) {
@@ -129,10 +167,10 @@ exports.removeMember = async (req, res, next) => {
         else return res.status(400).json({msg: 'User not found!'});
     }
     try{
-        let member = await GroupMember.find(req.body.group_Id, req.user.id);
+        let member = await GroupMember.find(req.body.chat_Id, req.user.id);
         member = member[0];
         if(member && member.admin) {
-            let result = await GroupMember.delete(req.body.group_Id, req.body.user_Id);
+            let result = await GroupMember.delete(req.body.chat_Id, req.body.user_Id);
             if(result) {
                 return res.status(200).json({msg: 'Removed successfully.'});
             }
@@ -149,7 +187,7 @@ exports.addMember = async (req, res, next) => {
         // join using invite link
     }
     else {
-        let member = await GroupMember.find(req.body.group_Id, req.user.id);
+        let member = await GroupMember.find(req.body.chat_Id, req.user.id);
         member = member[0];
         if(!member || !member.admin) {
             return res.status(401).json({msg: 'Not authorized.'});
@@ -160,11 +198,11 @@ exports.addMember = async (req, res, next) => {
                 req.body.user_Id = req.body.user_Id.id;
             else return res.status(400).json({msg: 'User not found!'});
         }
-        let newMember = await GroupMember.find(req.body.group_Id, req.body.user_Id);
+        let newMember = await GroupMember.find(req.body.chat_Id, req.body.user_Id);
         if(newMember[0]) {
             return res.status(200).json({msg: 'User already added.'});
         }
-        newMember = new GroupMember({group_Id: req.body.group_Id, user_Id: req.body.user_Id, admin: false});
+        newMember = new GroupMember({group_Id: req.body.chat_Id, user_Id: req.body.user_Id, admin: false});
         await newMember.save()
         if(newMember) {
             res.status(201).json({msg:'User added successfully.'});
@@ -176,18 +214,18 @@ exports.addMember = async (req, res, next) => {
 }
 
 exports.makeAdmin = async (req, res, next) => {
-    if(!req.body.group_Id || !req.body.user_Id || !req.body.admin) {
+    if(!req.body.chat_Id || !req.body.user_Id || !req.body.admin) {
         return res.status(400).json({msg: 'Missing required info.'});
     }
     try {
-        let member = await GroupMember.find(req.body.group_Id, req.user.id);
+        let member = await GroupMember.find(req.body.chat_Id, req.user.id);
         member = member[0];
         if(!member || !member.admin) {
             return res.status(401).json({msg: 'Not authorized.'});
         }
 
     
-        let result = await GroupMember.updateAdmin(req.body.group_Id, req.body.user_Id, req.body.admin)
+        let result = await GroupMember.updateAdmin(req.body.chat_Id, req.body.user_Id, req.body.admin)
         if(result) {
             return res.status(200).json({msg: 'Member updated Successfully.'});
         }

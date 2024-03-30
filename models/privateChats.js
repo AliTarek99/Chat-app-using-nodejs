@@ -27,18 +27,27 @@ class PrivateChat extends Chat {
             query = 'priv.id=?';
             params.push(id);
         }
-        else if(sender && recipient) {
-            query = '(priv.user1_Id=? AND priv.user2_Id=?) OR (priv.user1_Id=? AND priv.user2_Id=?)';
-            params.push(sender);
-            params.push(recipient);
-            params.push(recipient);
-            params.push(sender);
-        }
         if(sender) {
-            if(query.length) query += ' AND ';
-            query += '(priv.user1_Id=? OR priv.user2_Id=?)';
-            params.push(sender);
-            params.push(sender);
+            if(query.length) {
+                query += ' AND ';
+                query += '(priv.user1_Id=? OR priv.user2_Id=?)';
+                params.push(sender);
+                params.push(sender);
+            }
+            else {
+                if(recipient) {
+                    query = '((priv.user1_Id=? AND priv.user2_Id=?) OR (priv.user1_Id=? AND priv.user2_Id=?))';
+                    params.push(sender);
+                    params.push(recipient);
+                    params.push(recipient);
+                    params.push(sender);
+                }
+                else {
+                    query += '(priv.user1_Id=? OR priv.user2_Id=?)';
+                    params.push(sender);
+                    params.push(sender);
+                }
+            }
         }
         if(!params.length) return false;
         let chats;

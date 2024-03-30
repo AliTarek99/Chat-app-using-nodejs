@@ -6,34 +6,57 @@ const dbPool = require('./util/database');
 const multer = require('multer');
 const io = require('./util/sockets');
 const helper = require('./util/helperFunctions');
+const path = require('path');
+const PrivateChat = require('./models/privateChats');
+const { ChatTypes } = require('./models/chats');
+const GroupChats = require('./models/groupChats');
 
 const imagesStorage = multer.diskStorage({
     destination: function (req, file, cb) {
-        if(req.url.split('/')[2] == 'messages')
-            cb(null, path.join('data', 'images'));
-        else if(req.url.split('/')[2] == 'profile'){
-            cb(null, path.join('data', 'profilePics'));
+        try {
+            if(req.originalUrl.split('/')[2] == 'messages' && file.mimetype != 'audio/mp3') {
+                cb(null, path.join('data', 'images'));
+            }
+            else if(req.originalUrl.split('/')[2] == 'messages' && file.mimetype == 'audio/mp3')
+                cb(null, path.join('data', 'voiceRecords'));
+            else if(req.originalUrl.split('/')[2] == 'profile'){
+                cb(null, path.join('data', 'profilePics'));
+            }
+        } catch(err) {
+            cb(err);
         }
     },
     filename: async function (req, file, cb) {
         try {
             await helper.isAuth(req);
-        } catch(err) {
-            console.log(err);
-        }
-        if(req.user) {
-            if(req.url.split('/')[1] == 'messages' && req.chat_Id)
-                cb(null, `${new Date()}-${req.chat_Id}-${file.originalname}`);
+            if(req.user) {
+                if(req.originalUrl.split('/')[2] == 'messages') {
+                    let found;
+                    if(req.body.type == ChatTypes.group) {
+                        found = await GroupChats.findAllChats({user_Id: req.user.id, id: req.body.chat_Id});
+                    }
+                    else if(req.body.type == ChatTypes.private) {
+                        found = await PrivateChat.findAllChats({sender: req.user.id, id: req.body.chat_Id})
+                    }
+                    if(found)
+                        cb(null, `${new Date().getTime()}-${req.body.chat_Id}-${file.originalname}`);
+                    else 
+                        cb(new Error('Chat not found!'));
+                }
+                else if(req.originalUrl.split('/')[2] == 'profile') {
+                    cb(null, req.user.id + '.' + file.mimetype.split('/')[1]);
+                }
+            }
             else
-                cb(null, req.user.id + '.' + file.mimetype.split('/')[1]);
+                cb(new Error('Not authorized!'));
+        } catch(err) {
+            cb(err);
         }
-        else
-            cb(new Error('Not authorized!'));
     },
 });
 const voiceStorage = multer.diskStorage({
     destination: function (req, file, cb) {
-        if(req.url.split('/')[2] == 'messages')
+        if(req.originalUrl.split('/')[2] == 'messages')
             cb(null, path.join('data', 'voiceRecords'));
     },
     filename: async function (req, file, cb) {
@@ -42,9 +65,16 @@ const voiceStorage = multer.diskStorage({
         } catch(err) {
             console.log(err);
         }
-        if(req.user) {
-            if(req.url.split('/')[1] == 'messages')
-                cb(null, `${new Date()}-${req.chat_Id}-${file.originalname}`);
+        if(req.user && req.body.chat_Id && req.originalUrl.split('/')[2] == 'messages') {
+            let found;
+            if(req.body.type === ChatTypes.group) {
+                found = await GroupChats.findAllChats({user_Id: req.user.id, id: req.body.chat_Id});
+            }
+            else if(req.body.type === ChatTypes.private) {
+                found = await PrivateChat.findAllChats({sender: req.user.id, id: req.body.chat_Id})
+            }
+            if(found)
+                cb(null, `${new Date().getTime()}-${req.chat_Id}-${file.originalname}`);
         }
         else
             cb(new Error('Not authorized!'));
@@ -73,8 +103,14 @@ const uploadVoice = multer({
 
 
 const app = express();
-
 app.use(express.json());
+
+app.use((req, res, next) => {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', '*');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    next();
+});
 
 app.use('/data/profilePics', helper.isAuth, (req, res, next) => {
     res.setHeader('Content-Type', 'image/png');
@@ -92,22 +128,12 @@ app.use('/data/voiceRecords', helper.isAuth, helper.staticFileAuth, (req, res, n
 }, express.static(path.join('data', 'voiceRecords')));
 
 
-app.use((req, res, next) => {
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', '*');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-    next();
-});
-
-app.use(uploadProfilePics);
-app.use(uploadVoice);
-app.use(uploadImages);
 app.use("/api/auth", authRouter);
-app.use("/api/messages", chatsRouter);
-app.use("/api/profile", profileRouter);
+app.use("/api/messages", uploadImages, chatsRouter);
+app.use("/api/profile", uploadProfilePics, profileRouter);
 
 app.use((err, req, res, next) => {
-    console.log(err.message);
+    console.log(err);
     res.status(500).json({msg: 'Something went wrong we are working on it.'});
 });
 

@@ -14,7 +14,7 @@ router.patch('/change-password/:token',
 
 router.patch('/account-info', [
         check('email').notEmpty().isEmail().withMessage('invalid Email.'),
-        check('phone').isMobilePhone().notEmpty().withMessage('invalid phone number!'),
+        check('phone_Num').isMobilePhone().notEmpty().withMessage('invalid phone number!'),
         check('username').notEmpty().withMessage('username is required.')
     ], 
     isAuth,

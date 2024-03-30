@@ -51,6 +51,9 @@ class GroupChats extends Chat {
 
     static async update({id, group_Pic, description, join_Link, link_Expiry, name}) {
         let query = '', params = [];
+        if(!id) {
+            return false;
+        }
         if(group_Pic) {
             query += 'group_Pic=?,'
             params.push(group_Pic);

@@ -9,9 +9,9 @@ router.get('/chats', isAuth, chatsController.getChats);
 
 router.put('/chats', isAuth, chatsController.createChat);
 
-router.get('/messages/:chat_Id', isAuth, chatsController.getMessages);
+router.get('/:chat_Id', isAuth, chatsController.getMessages);
 
-router.put('/messages/:chat_Id', isAuth, check('message').custom((value, req) => {
+router.put('/', isAuth, check('message').custom((value, req) => {
     if(!value && !req.image && !req.voice)
         return false;
     return true;

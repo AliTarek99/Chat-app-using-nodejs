@@ -85,7 +85,7 @@ exports.modifyAccountInfo = async (req, res, next) => {
         user.profile_Pic = (req.file? req.file.path: undefined);
         let result;
         try {
-            result = await user.save();
+            result = await user.update();
         } catch(err) {
             next(err);
         }

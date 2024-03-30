@@ -12,23 +12,33 @@ class User {
         this.token_Expiry = token_Expiry;
         this.id = id;
     }
-
+    
     async save() {
         try {
             await db.execute('INSERT INTO Users (phone_Num, email, password, profile_Pic, username, status) values(?, ?, ?, ?, ?, ?)', 
-                [
-                    this.phone_Num, 
-                    this.email, 
-                    this.password, 
-                    this.profile_Pic || null, 
-                    this.username, 
-                    this.status || null
-                ]
+            [
+                this.phone_Num, 
+                this.email, 
+                this.password, 
+                this.profile_Pic || null, 
+                this.username, 
+                this.status || null
+            ]
             );
             return User.find({email: this.email});
         }catch(err) {
             return false;
         }
+    }
+
+    async update() {
+        try {
+            await db.execute('UPDATE Users SET phone_Num=?, email=?, password=?, profile_Pic=?, username=?, status=? WHERE Users.id = ?', [this.phone_Num, this.email, this.password, this.profile_Pic, this.username, this.status, this.id]);
+        } catch(err) {
+            console.log(err.message);
+            return false;
+        }
+        return true;
     }
     
     static async find({phone_Num, email, id, token}) {
@@ -53,7 +63,7 @@ class User {
             return user;
         } else return false;
     }
-    
+
     static async delete(userId) {
         try {
             await db.execute('DELETE FROM Users WHERE id=?', [userId]);

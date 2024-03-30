@@ -2,6 +2,8 @@ const publicKey = '45dc56f3e085146993094f22023a73d5', privateKey = 'fef96f600922
 const mailjet = require('node-mailjet').apiConnect(publicKey, privateKey);
 const jwt = require('jsonwebtoken');
 const User = require('../models/users');
+const PrivateChat = require('../models/privateChats');
+const GroupMember = require('../models/groupMembers');
 
 const JWT_SECRET_KEY = '1jf42983qweji1jaksgasnk-vasd'
 
@@ -66,11 +68,11 @@ exports.staticFileAuth = async (req, res, next) => {
     let chat_Id = req.originalUrl.split('/')[3].split('-')[1];
     if(chat_Id) {
         let found = await PrivateChat.findAllChats({id: chat_Id, sender: req.user.id});
-        if(!found) {
+        if(!found.length) {
             found = await GroupMember.find(chat_Id, req.user.id);
         }
-        if(found) {
-            next();
+        if(found.length) {
+            return next();
         }
         res.status(401).json({msg: 'Unauthorized!'});
     }
