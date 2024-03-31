@@ -23,6 +23,8 @@ router.delete('/groups/members', isAuth, chatsController.removeMember);
 
 router.put('/groups/members', isAuth, chatsController.addMember);
 
+router.put('/groups/members/:invite', isAuth, chatsController.addMember);
+
 router.patch('/groups/join_Link', isAuth, chatsController.createJoinLink);
 
 router.patch('/groups/members', isAuth, chatsController.makeAdmin);

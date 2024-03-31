@@ -23,7 +23,7 @@ class GroupChats extends Chat {
         return await GroupChats.findAllChats({id: this.id});
     }
 
-    static async findAllChats({user_Id, id}) {
+    static async findAllChats({user_Id, id, join_Link}) {
         let query, join = '', params = [];
         let chats;
         if(user_Id) {
@@ -34,6 +34,10 @@ class GroupChats extends Chat {
         else if(id) {
             query = 'gc.id=?';
             params.push(id);
+        }
+        else if(join_Link) {
+            query = 'gc.join_Link';
+            params.push(join_Link);
         }
         try{
             [chats] = await db.execute(`

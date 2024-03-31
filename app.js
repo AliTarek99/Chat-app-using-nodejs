@@ -10,6 +10,7 @@ const path = require('path');
 const PrivateChat = require('./models/privateChats');
 const { ChatTypes } = require('./models/chats');
 const GroupChats = require('./models/groupChats');
+const GroupMember = require('./models/groupMembers');
 
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
@@ -33,12 +34,12 @@ const storage = multer.diskStorage({
                 if(req.originalUrl.split('/')[2] == 'messages') {
                     let found;
                     if(req.body.type == ChatTypes.group) {
-                        found = await GroupChats.findAllChats({user_Id: req.user.id, id: req.body.chat_Id});
+                        found = await GroupMember.find(req.body.chat_Id, req.user.id);
                     }
                     else if(req.body.type == ChatTypes.private) {
                         found = await PrivateChat.findAllChats({sender: req.user.id, id: req.body.chat_Id})
                     }
-                    if(found)
+                    if(found.length)
                         cb(null, `${new Date().getTime()}-${req.body.chat_Id}-${file.originalname}`);
                     else 
                         cb(new Error('Chat not found!'));

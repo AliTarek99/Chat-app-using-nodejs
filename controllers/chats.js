@@ -6,6 +6,8 @@ const { ChatTypes, Chat } = require('../models/chats');
 const User = require('../models/users');
 const { validationResult } = require('express-validator');
 const sockets = require('../util/sockets');
+const GroupChats = require('../models/groupChats');
+const crypto = require('crypto');
 
 const DEFAULT_GROUP_PIC = '';
 
@@ -111,7 +113,7 @@ exports.sendMessage = async (req, res, next) => {
             }
             const recipientSocket = io.userSocket.get(req.body.user_Id);
             if(recipientSocket) {
-                let message = new Message({sender_Id: req.user.id ,chat_Id: chat.id, image: (req.file.mimetype != 'audio/mp3'? req.file.path: undefined), voice: (req.file.mimetype == 'audio/mp3'? req.file.path: undefined), message: req.body.message});
+                let message = new Message({sender_Id: req.user.id ,chat_Id: chat.id, image: (req.file.mimetype != 'audio/mp3' && req.file.mimetype != 'audio/mpeg' ? req.file.path: undefined), voice: (req.file.mimetype == 'audio/mp3' || req.file.mimetype == 'audio/mpeg'? req.file.path: undefined), message: req.body.message});
                 await message.save();
                 return io.to(recipientSocket).emit('msg-receive', message);
             }
@@ -183,8 +185,19 @@ exports.removeMember = async (req, res, next) => {
 }
 
 exports.addMember = async (req, res, next) => {
-    if(req.query.invite) {
-        // join using invite link
+    if(req.params.invite) {
+        if(!req.user)
+            return res.status(401).json({msg: 'Not authorized!'});
+        let found = await GroupChats.findAllChats({join_Link: req.params.invite});
+        found = found[0];
+        if(found) {
+            let member = new GroupMember({group_Id: found.id, user_Id: req.user.id});
+            await member.save();
+            res.status(201).json({found});
+        }
+        else {
+            return res.status(400).json({msg: 'Invite link not working!'});
+        }
     }
     else {
         let member = await GroupMember.find(req.body.chat_Id, req.user.id);
@@ -241,5 +254,30 @@ exports.makeAdmin = async (req, res, next) => {
 }
 
 exports.createJoinLink = async (req, res, next) => {
-    
+    if(req.body.chat_Id) {
+        try {
+            let member = await GroupMember.find(req.body.chat_Id, req.user.id);
+            member = member[0];
+            if(member && member.admin) {
+                crypto.randomBytes(32, async (err, buf) => {
+                    let link = buf.toString('hex');
+                    let link_Expiry = req.body.link_Expiry || new Date() + 86400000;
+                    let result = await GroupChats.update({id: req.body.chat_Id, link_Expiry: link_Expiry, join_Link: link});
+                    if(result) {
+                        res.status(201).json({join_Link: link, link_Expiry: link_Expiry});
+                    }
+                    else 
+                        res.status(500).json({msg: 'Server Error!'});
+                });
+            }
+            else {
+                res.status(401).json({msg: 'Unauthorized access!'});
+            }
+        } catch (err) {
+            next(err);
+        }
+    }
+    else {
+        res.status(400).json({msg: 'Missing chat_Id!'});
+    }
 }
