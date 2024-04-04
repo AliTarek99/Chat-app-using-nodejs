@@ -33,7 +33,7 @@ class User {
 
     async update() {
         try {
-            await db.execute('UPDATE Users SET phone_Num=?, email=?, password=?, profile_Pic=?, username=?, status=? WHERE Users.id = ?', [this.phone_Num, this.email, this.password, this.profile_Pic, this.username, this.status, this.id]);
+            await db.execute('UPDATE Users SET phone_Num=?, email=?, password=?, profile_Pic=?, username=?, status=?, password_Reset_Token=?, token_Expiry=? WHERE Users.id = ?', [this.phone_Num, this.email, this.password, this.profile_Pic || null, this.username, this.status || null, this.password_Reset_Token || null, this.token_Expiry || null, this.id]);
         } catch(err) {
             console.log(err.message);
             return false;
@@ -50,7 +50,7 @@ class User {
         else if(id) 
             query = 'id=?';
         else if(token)
-            query = 'token=?';
+            query = 'password_Reset_Token=?';
         else return false;
         
         try {

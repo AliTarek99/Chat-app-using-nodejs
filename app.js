@@ -76,17 +76,17 @@ app.use((req, res, next) => {
     next();
 });
 
-app.use('/data/profilePics', helper.isAuth, (req, res, next) => {
+app.use('/api/data/profilePics', helper.isAuth, (req, res, next) => {
     res.setHeader('Content-Type', 'image/png');
     next();
 }, express.static(path.join('data', 'profilePics')));
 
-app.use('/data/images', helper.isAuth, helper.staticFileAuth, (req, res, next) => {
+app.use('/api/data/images', helper.isAuth, helper.staticFileAuth, (req, res, next) => {
     res.setHeader('Content-Type', 'image/png');
     next();
 }, express.static(path.join('data', 'images')));
 
-app.use('/data/voiceRecords', helper.isAuth, helper.staticFileAuth, (req, res, next) => {
+app.use('/api/data/voiceRecords', helper.isAuth, helper.staticFileAuth, (req, res, next) => {
     res.setHeader('Content-Type', 'audio/mp3');
     next();
 }, express.static(path.join('data', 'voiceRecords')));

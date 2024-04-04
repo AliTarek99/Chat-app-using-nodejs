@@ -34,6 +34,19 @@ exports.getUser = async token => {
     }
 };
 
+exports.getId = async token => {
+    try {
+        let decodedToken = jwt.decode(token, JWT_SECRET_KEY);
+        if(!decodedToken.user_Id)
+        {
+            return undefined;
+        }
+        return decodedToken.user_Id;
+    } catch(err) { 
+        next(err);
+    }
+}
+
 
 exports.sendEmail = async (message, to) => {
     return await mailjet.post('send', {version: 'v3.1'}).request({
@@ -72,7 +85,7 @@ exports.messageFilter = (req, file, cb) => {
 }
 
 exports.staticFileAuth = async (req, res, next) => {
-    let chat_Id = req.originalUrl.split('/')[3].split('-')[1];
+    let chat_Id = req.originalUrl.split('/')[4].split('-')[1];
     if(chat_Id) {
         let found = await PrivateChat.findAllChats({id: chat_Id, sender: req.user.id});
         if(!found.length) {
@@ -82,5 +95,8 @@ exports.staticFileAuth = async (req, res, next) => {
             return next();
         }
         res.status(401).json({msg: 'Unauthorized!'});
+    }
+    else {
+        res.status(404).json({msg: 'Not found!'});
     }
 }

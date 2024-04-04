@@ -5,7 +5,7 @@ const isAuth = require('../util/helperFunctions').isAuth;
 
 const router = express.Router();
 
-router.get('/change-password', profileController.getPasswordReset);
+router.post('/change-password', profileController.getPasswordReset);
 
 router.patch('/change-password/:token',
     check('password').notEmpty().isLength({min: 5, max: 20}).withMessage('password length should be between 5 and 20 characters.'), 

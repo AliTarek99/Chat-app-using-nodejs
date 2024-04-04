@@ -36,7 +36,7 @@ class GroupChats extends Chat {
             params.push(id);
         }
         else if(join_Link) {
-            query = 'gc.join_Link';
+            query = 'gc.join_Link=?';
             params.push(join_Link);
         }
         try{
@@ -78,13 +78,13 @@ class GroupChats extends Chat {
             query += 'name=?,'
             params.push(name);
         }
-        else {
+        if(!params.length) {
             return false;
         }
         params.push(id);
         query = query.slice(0, -1);
         try{
-            await db.execute(`UPDATE Group_Chats ${query} WHERE id=?`, params);
+            await db.execute(`UPDATE Group_Chats SET ${query} WHERE id=?`, params);
         } catch(err) {
             return false;
         }

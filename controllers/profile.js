@@ -13,26 +13,28 @@ exports.getPasswordReset = async (req, res, next) => {
             }
             let tmp = buf.toString('hex');
             user.password_Reset_Token = tmp;
-            user.token_Expiry = new Date() + 3600000;
+            user.token_Expiry = new Date(new Date().getTime() + 3600000);
             try{
-                await user.save();
+                await user.update();
             } catch(err) {
                 next(err);
             }
             let message = {
                 Subject: 'Password Reset.',
                 text: 'To your password click here. If you did not request to reset your password ignore this email.',
-                html: `To your password click <a href='${req.protocol()}://${req.get('host')}/change-password/${user.password_Reset_Token}'>here</a>. If you did not request to reset your password ignore this email.`
+                html: `To your password click <a href='${req.protocol}://${req.get('host')}/change-password/${user.password_Reset_Token}'>here</a>. If you did not request to reset your password ignore this email.`
             };
             let recipient = {
                 email: user.email,
                 name: user.username
             }
             sendEmail(message, recipient);
-            res.status(200).json({msg: 'If email entered exists you will recieve an email.'});
+            return res.status(200).json({msg: 'If email entered exists you will recieve an email.'});
         });
     }
-    res.status(200).json({msg: 'If email entered exists you will recieve an email.'});
+    else {
+        return res.status(200).json({msg: 'If email entered exists you will recieve an email.'});
+    }
 }
 
 exports.patchPassword = async (req, res, next) => {
@@ -42,7 +44,7 @@ exports.patchPassword = async (req, res, next) => {
     }
     let user = await User.find({token: req.params.token});
     if(!user || user.token_Expiry >= new Date()) {
-        return res.status(404);
+        return res.status(404).json({msg: 'link expired.'});
     }
     user.password = await bcrypt.hash(req.body.password, 12);
     crypto.randomBytes(32, async (err, buf) => {
@@ -51,9 +53,9 @@ exports.patchPassword = async (req, res, next) => {
         }
         let tmp = buf.toString('hex');
         user.password_Reset_Token = tmp;
-        user.token_Expiry = new Date() + (3600000 * 2);
+        user.token_Expiry = new Date(new Date().getTime() + (3600000 * 2)) ;
         try{
-            await user.save();
+            await user.update();
         } catch(err) {
             next(err);
         }
@@ -61,7 +63,7 @@ exports.patchPassword = async (req, res, next) => {
         let message = {
             Subject: 'Password Changed.',
             text: 'Your password has been changed, If it was not you click here to reset it. This link is valid for 2 hours only.',
-            html: `Your password has been changed, If it was not you click <a href='${req.protocol()}://${req.get('host')}/change-password/${user.password_Reset_Token}'>here</a> to reset it. This link is valid for 2 hours only.`
+            html: `Your password has been changed, If it was not you click <a href='${req.protocol}://${req.get('host')}/change-password/${user.password_Reset_Token}'>here</a> to reset it. This link is valid for 2 hours only.`
         };
         let recipient = {
             email: user.email,

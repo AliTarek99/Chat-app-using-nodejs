@@ -52,7 +52,7 @@ class PrivateChat extends Chat {
         if(!params.length) return false;
         let chats;
         try{
-            [chats] = await db.execute('SELECT * FROM Private_Chats AS priv LEFT JOIN Users ON ((priv.user1_Id=Users.id OR priv.user2_Id=Users.id) AND Users.id!=?) WHERE ' + query, params);
+            [chats] = await db.execute('SELECT priv.*, Users.phone_Num, Users.username, Users.email FROM Private_Chats AS priv LEFT JOIN Users ON ((priv.user1_Id=Users.id OR priv.user2_Id=Users.id) AND Users.id!=?) WHERE ' + query, params);
         } catch(err) {
             return false;
         }
@@ -66,6 +66,7 @@ class PrivateChat extends Chat {
                 id: value.id, 
                 phone_Num: value.phone_Num,
                 username: value.username,
+                email: value.email,
                 profile_Pic: value.profile_Pic,
             };
         });
