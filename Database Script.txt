@@ -1,0 +1,75 @@
+CREATE DATABASE `chatting_app` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci */ /*!80016 DEFAULT ENCRYPTION='N' */;
+
+
+CREATE TABLE `chats` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `type` tinyint NOT NULL,
+  PRIMARY KEY (`id`)
+);
+
+CREATE TABLE `group_chats` (
+  `id` int NOT NULL,
+  `group_Pic` varchar(60) DEFAULT NULL,
+  `description` varchar(100) DEFAULT NULL,
+  `join_Link` varchar(258) DEFAULT NULL,
+  `link_Expiry` datetime DEFAULT NULL,
+  `name` varchar(20) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `join_Link_UNIQUE` (`join_Link`),
+  UNIQUE KEY `group_pic_UNIQUE` (`group_Pic`),
+  CONSTRAINT `chatId` FOREIGN KEY (`id`) REFERENCES `chats` (`id`) ON DELETE CASCADE
+);
+
+CREATE TABLE `group_members` (
+  `group_Id` int NOT NULL,
+  `user_Id` int NOT NULL,
+  `admin` tinyint NOT NULL,
+  KEY `user_id_idx` (`user_Id`) /*!80000 INVISIBLE */,
+  KEY `fk_group_id_idx` (`group_Id`),
+  CONSTRAINT `fk_group_id` FOREIGN KEY (`group_Id`) REFERENCES `group_chats` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_user_id` FOREIGN KEY (`user_Id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+);
+
+CREATE TABLE `messages` (
+  `message` varchar(400) DEFAULT NULL,
+  `voice` varchar(100) DEFAULT NULL,
+  `image` varchar(100) DEFAULT NULL,
+  `createdAt` datetime NOT NULL,
+  `chat_Id` int NOT NULL,
+  `id` int NOT NULL AUTO_INCREMENT,
+  `sender_Id` int NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `fk_sender_Id_idx` (`sender_Id`),
+  KEY `fk_chat_Id_idx` (`chat_Id`),
+  CONSTRAINT `fk_chat_Id` FOREIGN KEY (`chat_Id`) REFERENCES `chats` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_sender_Id` FOREIGN KEY (`sender_Id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+);
+
+CREATE TABLE `private_chats` (
+  `id` int NOT NULL,
+  `user1_Id` int NOT NULL,
+  `user2_Id` int NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `composite_Key` (`user1_Id`,`user2_Id`),
+  KEY `user1_Id_idx` (`user1_Id`),
+  KEY `user2_Id_idx` (`user2_Id`),
+  CONSTRAINT `chat_Id` FOREIGN KEY (`id`) REFERENCES `chats` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `user1_Id` FOREIGN KEY (`user1_Id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `user2_Id` FOREIGN KEY (`user2_Id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+);
+
+CREATE TABLE `users` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `phone_Num` varchar(14) NOT NULL,
+  `email` varchar(60) NOT NULL,
+  `password` varchar(100) NOT NULL,
+  `profile_Pic` varchar(60) DEFAULT NULL,
+  `username` varchar(20) NOT NULL,
+  `status` varchar(100) DEFAULT NULL,
+  `password_Reset_Token` varchar(100) DEFAULT NULL,
+  `token_Expiry` varchar(100) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `phone_Num_UNIQUE` (`phone_Num`),
+  UNIQUE KEY `email_UNIQUE` (`email`),
+  UNIQUE KEY `password_Reset_UNIQUE` (`password_Reset_Token`)
+);
