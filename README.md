@@ -14,5 +14,5 @@ You can find the API documentation <a href="https://documenter.getpostman.com/vi
 ## Note
 The API will not work without your keys and database user data because all the API keys have been changed.
 
-## The Database design
+## Database design
 ![image](https://github.com/AliTarek99/Chat-app-using-nodejs/assets/120846112/1fe960be-5c2b-48c9-8872-96afa3948346)
