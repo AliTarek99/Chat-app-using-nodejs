@@ -10,6 +10,7 @@ You can find the API documentation <a href="https://documenter.getpostman.com/vi
 - Authentication and authorization are implemented on all the endpoints with sensitive information.
 - For handling file upload I used Multer and added authorization in the diskStorage functions.
 - For sending emails I used Mailjet API.
+- I used socket.io to handle websocket requests and to forward received messages to the receiver.
 
 ## Note
 The API will not work without your keys and database user data because all the API keys have been changed.
